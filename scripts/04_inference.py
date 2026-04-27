@@ -19,13 +19,21 @@ from src.config import (INFERENCE_FILE, N_VIDEO_FRAMES, PARAPHRASES_FILE,
 
 INSTRUCTION = {
     "object_counting": "Answer with a single integer count and nothing else.",
-    "relative_distance": "Answer with the letter (A, B, C, or D) of the correct option and nothing else.",
-    "relative_direction": "Answer with the letter (A, B, C, or D) of the correct option and nothing else.",
+    "object_rel_distance": "Answer with the letter (A, B, C, or D) of the correct option and nothing else.",
+    "object_rel_direction": "Answer with the letter (A, B, C, or D) of the correct option and nothing else.",
 }
 
 
+def _instruction_for(category: str) -> str:
+    if category in INSTRUCTION:
+        return INSTRUCTION[category]
+    if category.startswith("object_rel_direction"):
+        return INSTRUCTION["object_rel_direction"]
+    return "Answer concisely."
+
+
 def format_prompt(question: str, options: list | None, category: str) -> str:
-    instr = INSTRUCTION.get(category, "Answer concisely.")
+    instr = _instruction_for(category)
     if options:
         letters = ["A", "B", "C", "D", "E", "F"]
         opts_str = "\n".join(f"{letters[i]}. {opt}" for i, opt in enumerate(options))

@@ -12,8 +12,10 @@ from src.config import CATEGORIES, FIGURES_DIR, SCORES_FILE
 
 CAT_LABEL = {
     "object_counting": "Object Count",
-    "relative_distance": "Relative Distance",
-    "relative_direction": "Relative Direction",
+    "object_rel_distance": "Relative Distance",
+    "object_rel_direction_easy": "Relative Direction (Easy)",
+    "object_rel_direction_medium": "Relative Direction",
+    "object_rel_direction_hard": "Relative Direction (Hard)",
 }
 
 

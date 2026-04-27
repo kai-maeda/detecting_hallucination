@@ -21,13 +21,13 @@ def normalize_answer(answer: str, category: str) -> str:
                 return nums[0]
         return a
 
-    if category == "relative_direction":
+    if category.startswith("object_rel_direction"):
         for d in DIRECTION_WORDS:
             if d in a:
                 return d
         return a
 
-    if category == "relative_distance":
+    if category == "object_rel_distance":
         # Often MC: "A", "B", "C", "D" or an object name
         m = re.match(r"^\(?([a-d])\)?[\.\):\s]", a)
         if m:
