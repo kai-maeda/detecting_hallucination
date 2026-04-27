@@ -10,7 +10,7 @@ for d in [DATA_DIR, VIDEO_DIR, RESULTS_DIR, FIGURES_DIR]:
     d.mkdir(parents=True, exist_ok=True)
 
 CATEGORIES = ["object_counting", "object_rel_distance", "object_rel_direction_medium"]
-N_PER_CATEGORY = 50
+N_PER_CATEGORY = 150
 N_PARAPHRASES = 4
 SEED = 42
 
