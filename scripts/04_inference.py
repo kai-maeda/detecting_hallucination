@@ -59,25 +59,33 @@ def load_model():
     return model, processor
 
 
-def run_one(model, processor, video_path: str, prompt_text: str) -> str:
-    messages = [{
+def run_item_batched(model, processor, video_path: str, prompt_texts: list[str]) -> list[str]:
+    """Run all prompts for a single video in one batched forward pass.
+
+    Same video is reused across all prompts, so the vision encoder + decoder
+    forward runs as batch_size=len(prompts), keeping the GPU continuously busy
+    instead of idle between sequential single-prompt calls.
+    """
+    messages_list = [[{
         "role": "user",
         "content": [
             {"type": "video", "video": video_path, "nframes": N_VIDEO_FRAMES,
              "max_pixels": 360 * 420},
-            {"type": "text", "text": prompt_text},
+            {"type": "text", "text": pt},
         ],
-    }]
-    text = processor.apply_chat_template(messages, tokenize=False, add_generation_prompt=True)
-    image_inputs, video_inputs = process_vision_info(messages)
-    inputs = processor(text=[text], images=image_inputs, videos=video_inputs,
+    }] for pt in prompt_texts]
+
+    texts = [processor.apply_chat_template(m, tokenize=False, add_generation_prompt=True)
+             for m in messages_list]
+    image_inputs, video_inputs = process_vision_info(messages_list)
+    inputs = processor(text=texts, images=image_inputs, videos=video_inputs,
                        padding=True, return_tensors="pt").to(model.device)
 
     with torch.no_grad():
         gen_ids = model.generate(**inputs, max_new_tokens=64, do_sample=False)
     gen_ids = gen_ids[:, inputs.input_ids.shape[1]:]
-    out = processor.batch_decode(gen_ids, skip_special_tokens=True)[0]
-    return out.strip()
+    outs = processor.batch_decode(gen_ids, skip_special_tokens=True)
+    return [o.strip() for o in outs]
 
 
 def main():
@@ -96,15 +104,23 @@ def main():
         for item in tqdm(items, desc="inference"):
             if item["id"] in done:
                 continue
-            answers = []
             t0 = time.time()
-            for prompt in item["prompts"]:
-                text = format_prompt(prompt, item.get("options"), item["category"])
-                try:
-                    ans = run_one(model, processor, item["video_path"], text)
-                except Exception as e:
-                    ans = f"<ERROR: {e}>"
-                answers.append(ans)
+            prompt_texts = [format_prompt(p, item.get("options"), item["category"])
+                            for p in item["prompts"]]
+            try:
+                answers = run_item_batched(model, processor, item["video_path"], prompt_texts)
+            except torch.cuda.OutOfMemoryError:
+                # Fall back to one-at-a-time if the batch doesn't fit
+                torch.cuda.empty_cache()
+                answers = []
+                for pt in prompt_texts:
+                    try:
+                        a = run_item_batched(model, processor, item["video_path"], [pt])[0]
+                    except Exception as e:
+                        a = f"<ERROR: {e}>"
+                    answers.append(a)
+            except Exception as e:
+                answers = [f"<ERROR: {e}>"] * len(prompt_texts)
 
             results.append({
                 "id": item["id"],
