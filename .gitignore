@@ -1,0 +1,41 @@
+CS6674 - Final Project Description.pdf
+README.md
+report.tex
+zebras.png
+report.pdf
+
+# Environment / secrets
+.env
+.env.local
+*.key
+
+# Data and cache
+data/
+videos/
+hf_cache/
+
+# Python
+__pycache__/
+*.py[cod]
+*.egg-info/
+.venv/
+venv/
+.ipynb_checkpoints/
+
+# Outputs
+results/
+figures/
+
+# LaTeX build artifacts
+*.aux
+*.log
+*.fls
+*.fdb_latexmk
+*.synctex.gz
+*.out
+*.toc
+*.bbl
+*.blg
+
+# OS
+.DS_Store

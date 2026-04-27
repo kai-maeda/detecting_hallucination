@@ -1,0 +1,15 @@
+torch==2.4.0
+transformers==4.49.0
+accelerate>=1.0.0
+qwen-vl-utils[decord]==0.0.8
+flash-attn==2.7.4.post1
+datasets>=3.0.0
+huggingface_hub>=0.26.0
+openai>=1.50.0
+python-dotenv>=1.0.0
+scikit-learn>=1.5.0
+matplotlib>=3.9.0
+pandas>=2.2.0
+numpy>=1.26.0
+tqdm>=4.66.0
+av>=13.0.0
