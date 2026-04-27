@@ -55,6 +55,12 @@ def load_model():
             attn_implementation="sdpa",
         )
     processor = AutoProcessor.from_pretrained(VLM_MODEL)
+    # CRITICAL for batched generation on decoder-only models: pad on the LEFT.
+    # Right-padding makes the model attend to pad tokens during generation and
+    # produces garbage for all sequences in the batch except the longest one.
+    processor.tokenizer.padding_side = "left"
+    if hasattr(processor.tokenizer, "pad_token") and processor.tokenizer.pad_token is None:
+        processor.tokenizer.pad_token = processor.tokenizer.eos_token
     model.eval()
     return model, processor
 
@@ -135,6 +141,10 @@ def main():
 
             # Checkpoint every item to make this fully resumable
             INFERENCE_FILE.write_text(json.dumps(results, indent=2, default=str))
+
+            # Free GPU cache between items so it doesn't bloat over time.
+            if torch.cuda.is_available():
+                torch.cuda.empty_cache()
     finally:
         INFERENCE_FILE.write_text(json.dumps(results, indent=2, default=str))
         print(f"Wrote {len(results)} items -> {INFERENCE_FILE}")
