@@ -1,5 +1,6 @@
 #!/usr/bin/env bash
 # One-shot env setup for a fresh RunPod H100 / A100 pod (PyTorch 2.4 image recommended).
+# Skips flash-attn — inference falls back to SDPA, which is plenty fast for POC.
 set -euo pipefail
 
 echo "== System info =="
@@ -9,24 +10,18 @@ python3 --version
 echo "== Upgrading pip =="
 python3 -m pip install --upgrade pip wheel
 
-echo "== Installing requirements =="
-# Install torch first (matches CUDA 12.1 in the standard RunPod PyTorch image).
+echo "== Installing torch first =="
 python3 -m pip install --no-cache-dir torch==2.4.0
 
-# flash-attn needs torch present at install time.
+echo "== Installing remaining requirements =="
 python3 -m pip install --no-cache-dir -r requirements.txt
 
-echo "== Verifying CUDA + flash-attn =="
+echo "== Verifying CUDA =="
 python3 - <<'PY'
 import torch
 print("torch:", torch.__version__, "cuda available:", torch.cuda.is_available())
 if torch.cuda.is_available():
     print("device:", torch.cuda.get_device_name(0))
-try:
-    import flash_attn
-    print("flash_attn:", flash_attn.__version__)
-except Exception as e:
-    print("flash_attn import failed:", e, "(SDPA fallback will be used)")
 PY
 
 echo "== Done. Next: copy .env.example to .env and add your OPENAI_API_KEY =="
