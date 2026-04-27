@@ -28,7 +28,6 @@ results/
 figures/
 
 # LaTeX build artifacts
-*.aux
 *.log
 *.fls
 *.fdb_latexmk
