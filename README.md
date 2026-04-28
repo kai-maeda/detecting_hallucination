@@ -1,50 +1,67 @@
-//Go to OpenAI and setup API key
+# Detecting Spatial Hallucination — Run Instructions
 
-//Connect to runpod H100 SXM
-//Bump container disk to 50GB for QWEN weights + videos
+Step-by-step instructions for reproducing the experiment on RunPod.
 
-//Connect to the Pod Web Terminal
+## 1. Prerequisites
 
-//To deteatch inference run from SSH
+- OpenAI API key — create at https://platform.openai.com/api-keys
+- RunPod account with billing enabled
+
+## 2. Provision the pod
+
+- Spin up a **RunPod H100 SXM** pod
+- Bump container disk to **50 GB** (for Qwen weights + videos)
+- Connect via the **Pod Web Terminal**
+
+## 3. Set up `tmux` so the inference run survives SSH disconnects
+
+```bash
 apt-get update && apt-get install -y tmux
-
-//Start a session
 tmux new -s exp
+```
 
-cd/workspace
+## 4. Clone and install
+
+```bash
+cd /workspace
 git clone https://github.com/kai-maeda/detecting_hallucination.git
 cd detecting_hallucination
-
 bash setup_runpod.sh
+```
 
-//Add OpenAI API key
+## 5. Add your OpenAI API key
+
+```bash
 cp .env.example .env
-nano .env
+nano .env   # paste your sk-... key, save with Ctrl+O, Ctrl+X
+```
 
-//Sanity check VSI-Bench fields
+## 6. Run the pipeline
+
+```bash
+# Sanity-check VSI-Bench fields
 python3 scripts/01_inspect_dataset.py
 
-//Download videos + sample 50 per category 
+# Download videos + sample N per category
 python3 scripts/02_prep_data.py
 
-//Generate paraphrases via GPT-4o-mini 
+# Generate paraphrases via GPT-4o-mini
 python3 scripts/03_paraphrase.py
 
-// Run Qwen2.5-VL-7B inference 
+# Run Qwen2.5-VL-7B inference
 python3 scripts/04_inference.py
 
-// Score
+# Score
 python3 scripts/05_score.py
 
-// Plot figure + LaTeX table
+# Plot figures + LaTeX results table
 python3 scripts/06_plot.py
+```
 
-//download figues/ and results/ from runpod
+## 7. Pull artifacts back
 
-//Stop pod
+Download `figures/` and `results/` from the pod (web file browser, JupyterLab, or `scp`).
 
-Things that might bite you (and how to handle)
-VSI-Bench field names: my code assumes question_type, ground_truth, dataset, scene_name, options. The inspect script tells you the truth. Adjust the constants at the top of 02_prep_data.py if needed.
-Video download paths: 02_prep_data.py tries 4 path patterns; if all fail for everything, the dataset stores videos differently (could be a tarball or symlinked from ScanNet++). You'll see "0 videos downloaded" — ping me with what 01_inspect_dataset.py printed and I'll adjust.
-flash-attn install: sometimes fails on weird CUDA versions. The inference script catches this and falls back to SDPA automatically (~20% slower, no big deal).
-OOM: shouldn't happen on H100 (80GB) with a 7B model + 8 frames. If on smaller GPU, drop N_VIDEO_FRAMES to 4 in src/config.py.
+## 8. Stop the pod
+
+Terminate from the RunPod dashboard to stop billing.

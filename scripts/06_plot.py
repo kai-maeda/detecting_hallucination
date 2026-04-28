@@ -58,6 +58,51 @@ def main():
     plt.close()
     print(f"Wrote {fig_path}")
 
+    # === Figure 2: grouped bar chart of consistency-level distribution ===
+    # Consistency takes only 5 discrete values: {0.2, 0.4, 0.6, 0.8, 1.0}.
+    # For each category, show % of items at each level, split by correct/hallucinated.
+    levels = [0.2, 0.4, 0.6, 0.8, 1.0]
+    fig, axes = plt.subplots(1, len(CATEGORIES), figsize=(11, 3.5), sharey=True)
+    if len(CATEGORIES) == 1:
+        axes = [axes]
+    bar_w = 0.38
+
+    for ax, cat in zip(axes, CATEGORIES):
+        cat_rows = [r for r in per_item if r["category"] == cat]
+        cor = [r["consistency"] for r in cat_rows if r["modal_correct"]]
+        hal = [r["consistency"] for r in cat_rows if not r["modal_correct"]]
+
+        def pct_at(vals, level, tol=0.05):
+            if not vals:
+                return 0.0
+            return 100.0 * sum(1 for v in vals if abs(v - level) < tol) / len(vals)
+
+        cor_pct = [pct_at(cor, l) for l in levels]
+        hal_pct = [pct_at(hal, l) for l in levels]
+
+        x = np.arange(len(levels))
+        ax.bar(x - bar_w/2, cor_pct, bar_w, color="#4C9AFF",
+               label=f"Correct (n={len(cor)})", edgecolor="black", linewidth=0.5)
+        ax.bar(x + bar_w/2, hal_pct, bar_w, color="#FF6B6B",
+               label=f"Hallucinated (n={len(hal)})", edgecolor="black", linewidth=0.5)
+        ax.set_xticks(x)
+        ax.set_xticklabels([f"{l:.1f}" for l in levels])
+        ax.set_xlabel("Self-consistency score")
+        ax.set_title(CAT_LABEL[cat], fontsize=11)
+        ax.grid(axis="y", alpha=0.3)
+        ax.set_axisbelow(True)
+        ax.legend(loc="upper left", fontsize=8)
+
+    axes[0].set_ylabel("% of items at this consistency level")
+    fig.suptitle("Per-category consistency distribution: Correct vs. Hallucinated answers",
+                 fontsize=12)
+    plt.tight_layout(rect=[0, 0, 1, 0.95])
+    fig2_path = FIGURES_DIR / "consistency_bars.pdf"
+    plt.savefig(fig2_path)
+    plt.savefig(fig2_path.with_suffix(".png"), dpi=160)
+    plt.close()
+    print(f"Wrote {fig2_path}")
+
     # === LaTeX table ===
     lines = [
         r"\begin{table}[t]",
